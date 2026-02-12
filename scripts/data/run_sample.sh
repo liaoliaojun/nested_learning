@@ -3,6 +3,7 @@ set -euo pipefail
 
 TOKENIZER_MODEL=${1:-artifacts/tokenizer/refinedweb_mix/spm_32000_unigram.model}
 TOKENIZER_DIR="$(dirname "${TOKENIZER_MODEL}")"
+RPJ_DATASET=${RPJ_DATASET:-gmongaras/SlimPajama-627B_Reupload}
 
 if [[ ! -f "data/filtered/refinedweb_en_sample.txt" ]]; then
   echo "[Data] Creating filtered RefinedWeb sample"
@@ -47,8 +48,9 @@ fi
 
 if [[ ! -f "data/filtered/redpajama_en_sample.txt" ]]; then
   echo "[Data] Creating filtered SlimPajama sample"
-  uv run python scripts/data/filter_corpus.py \
-    "--dataset=cerebras/SlimPajama-627B" \
+  # 兼容不同镜像配置：先尝试无 subset，再尝试 subset=default。
+  if ! uv run python scripts/data/filter_corpus.py \
+    "--dataset=${RPJ_DATASET}" \
     --split train \
     --text-column text \
     --target-lang en \
@@ -57,7 +59,31 @@ if [[ ! -f "data/filtered/redpajama_en_sample.txt" ]]; then
     --max-chars 8000 \
     --limit 1000 \
     --output-path data/filtered/redpajama_en_sample.txt \
-    --force-exit
+    --force-exit; then
+    echo "[Data][Warn] SlimPajama without subset failed; retrying with subset=default"
+    if ! uv run python scripts/data/filter_corpus.py \
+      "--dataset=${RPJ_DATASET}" \
+      --subset default \
+      --split train \
+      --text-column text \
+      --target-lang en \
+      --lang-threshold 0.85 \
+      --min-chars 200 \
+      --max-chars 8000 \
+      --limit 1000 \
+      --output-path data/filtered/redpajama_en_sample.txt \
+      --force-exit; then
+    echo "[Data][Warn] SlimPajama unavailable; falling back to c4/wikipedia sample"
+    if [[ -f "data/filtered/c4_en_sample.txt" ]]; then
+      cp data/filtered/c4_en_sample.txt data/filtered/redpajama_en_sample.txt
+    elif [[ -f "data/filtered/wikipedia_en_sample.txt" ]]; then
+      cp data/filtered/wikipedia_en_sample.txt data/filtered/redpajama_en_sample.txt
+    else
+      echo "[Data][Error] No fallback corpus found for redpajama sample"
+      exit 1
+    fi
+    fi
+  fi
 fi
 
 if [[ ! -f "data/filtered/code_en_sample.txt" ]]; then

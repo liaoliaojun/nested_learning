@@ -1,0 +1,8 @@
+{
+  "samples": 64,
+  "filler_sentences": 100,
+  "accuracy_base": 0.515625,
+  "accuracy_memorize": 0.515625,
+  "accuracy_delta": 0.0,
+  "path_stats": {}
+}

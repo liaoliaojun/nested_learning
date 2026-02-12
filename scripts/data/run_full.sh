@@ -102,8 +102,9 @@ filter_dataset "c4" \
   "${C4_MIN_CHARS:-200}" \
   "${C4_MAX_CHARS:-8000}"
 
+# 使用社区重传镜像，默认不带 subset；若需要可通过 RPJ_SUBSET 显式指定。
 filter_dataset "redpajama" \
-  "${RPJ_DATASET:-cerebras/SlimPajama-627B}" \
+  "${RPJ_DATASET:-gmongaras/SlimPajama-627B_Reupload}" \
   "${RPJ_SUBSET:-}" \
   "${RPJ_SPLIT:-train}" \
   "${RPJ_TEXT_COLUMN:-text}" \

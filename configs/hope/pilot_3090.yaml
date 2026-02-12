@@ -1,0 +1,40 @@
+defaults:
+  - /pilot
+  - _self_
+
+model:
+  # 降低激活占用，优先保证 24GB 显存可稳定训练。
+  gradient_checkpointing: true
+
+data:
+  # 3090 建议先从 batch=1 起步，稳定后再尝试 2。
+  batch_size: 1
+  num_workers: 2
+
+train:
+  device: "cuda:0"
+  # 关闭 compile，减少首次编译开销与潜在兼容问题。
+  compile:
+    enable: false
+  mixed_precision:
+    enabled: true
+    dtype: bf16
+  checkpoint:
+    enable: true
+    dir: artifacts/checkpoints/pilot_3090
+    save_interval: 500
+    save_last: true
+    resume_path: null
+    resume_tag: null
+
+optim:
+  # 新手优先兼容性；如果你确认环境支持 Muon，可改回 muon。
+  type: adamw
+  lr: 2.5e-4
+  fused: auto
+
+logging:
+  enabled: true
+  backend: json
+  path: logs/pilot_3090_metrics.json
+  run_name: pilot-3090
